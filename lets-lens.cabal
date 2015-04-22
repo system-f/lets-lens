@@ -36,14 +36,17 @@ library
                       -fno-warn-unused-imports
                       -fno-warn-type-defaults
 
-  default-extensions: NoImplicitPrelude
-                      ScopedTypeVariables
-                      InstanceSigs
-                      RebindableSyntax
-
   hs-source-dirs:     src
 
   exposed-modules:    Lets
+                      Lets.Data
+                      Lets.GetSetLens
+                      Lets.Lens
+                      Lets.Lens.Choice
+                      Lets.Lens.Lens
+                      Lets.Lens.Profunctor
+                      Lets.OpticPolyLens
+                      Lets.StoreLens
                       
 test-suite            doctests
   type:
