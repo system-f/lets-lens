@@ -2,7 +2,6 @@
 
 ![NICTA](http://i.imgur.com/sMXB9XB.jpg)
 
-
 ### Abstract
 
 Let's Lens presents a series of exercises, in a similar format to
@@ -20,6 +19,9 @@ to study the history of lenses, then build up to the most recent theories, it is
 best to start at the `Lets.GetSetLens` module. If you wish to derive the
 structure of lenses from first principles, then derive the more modern theories,
 start at the `Lets.Lens.Lens` module.
+
+Exercises can be recognised by filling in a function body that has a placeholder
+of `error "todo: <function-name>"`.
 
 ----
 
