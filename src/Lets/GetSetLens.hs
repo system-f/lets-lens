@@ -37,14 +37,14 @@ module Lets.GetSetLens (
 , modifyCityUppercase
 ) where
 
-import Control.Applicative((<*>))
+import Control.Applicative(Applicative((<*>)))
 import Data.Bool(bool)
 import Data.Char(toUpper)
 import Data.Map(Map)
 import qualified Data.Map as Map(insert, delete, lookup)
 import Data.Set(Set)
 import qualified Data.Set as Set(insert, delete, member)
-import Lets.Data
+import Lets.Data(Person(Person), Locality(Locality), Address(Address))
 import Prelude hiding (product)
 
 -- $setup

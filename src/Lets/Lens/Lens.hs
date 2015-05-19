@@ -73,19 +73,19 @@ module Lets.Lens.Lens (
 , intOrLengthEven
 ) where
 
-import Control.Applicative(Applicative(..))
+import Control.Applicative(Applicative((<*>), pure))
 import Data.Bool(bool)
 import Data.Char(toUpper)
-import Data.Foldable(Foldable(..))
+import Data.Foldable(Foldable(foldMap))
 import Data.Functor((<$>))
 import Data.Map(Map)
 import qualified Data.Map as Map(insert, delete, lookup)
-import Data.Monoid(Monoid(..))
+import Data.Monoid(Monoid)
 import qualified Data.Set as Set(Set, insert, delete, member)
-import Data.Traversable(Traversable(..))
-import Lets.Data
-import Lets.Lens.Choice
-import Lets.Lens.Profunctor
+import Data.Traversable(Traversable(traverse))
+import Lets.Data(AlongsideLeft(AlongsideLeft, getAlongsideLeft), AlongsideRight(AlongsideRight, getAlongsideRight), Identity(Identity, getIdentity), Const(Const, getConst), Tagged(Tagged, getTagged), IntOr(IntOrIs, IntOrIsNot), IntAnd(IntAnd), Person(Person), Locality(Locality), Address(Address))
+import Lets.Lens.Choice(Choice(left, right))
+import Lets.Lens.Profunctor(Profunctor(dimap))
 import Prelude hiding (product)
 
 -- $setup

@@ -1,5 +1,4 @@
-module Lets.Lens.Profunctor
-(
+module Lets.Lens.Profunctor (
   Profunctor(dimap)
 ) where
 
