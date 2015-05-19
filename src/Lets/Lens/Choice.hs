@@ -1,5 +1,4 @@
-module Lets.Lens.Choice
-(
+module Lets.Lens.Choice (
   Choice(..)
 ) where
 
