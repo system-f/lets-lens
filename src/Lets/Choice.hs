@@ -1,9 +1,9 @@
-module Lets.Lens.Choice (
+module Lets.Choice (
   Choice(..)
 ) where
 
 import Lets.Data
-import Lets.Lens.Profunctor
+import Lets.Profunctor
 
 diswap ::
   Profunctor p =>
