@@ -39,13 +39,12 @@ library
   hs-source-dirs:     src
 
   exposed-modules:    Lets
+                      Lets.Choice
                       Lets.Data
                       Lets.GetSetLens
                       Lets.Lens
-                      Lets.Lens.Choice
-                      Lets.Lens.Lens
-                      Lets.Lens.Profunctor
                       Lets.OpticPolyLens
+                      Lets.Profunctor
                       Lets.StoreLens
                       
 test-suite            doctests

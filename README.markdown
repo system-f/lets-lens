@@ -16,7 +16,7 @@ The exercises take into account various possible goals. For example, if you wish
 to study the history of lenses, then build up to the most recent theories, it is
 best to start at the `Lets.GetSetLens` module. If you wish to derive the
 structure of lenses from first principles, then derive the more modern theories,
-start at the `Lets.Lens.Lens` module.
+start at the `Lets.Lens` module.
 
 Exercises can be recognised by filling in a function body that has a placeholder
 of `error "todo: <function-name>"`.
@@ -49,7 +49,7 @@ This series of exercises introduces a new representation of lenses, first
 described by Twan van Laarhoven. This representation also introduces a
 generalisation of lenses to permit *polymorphic update* of structures.
 
-##### `Lets.Lens.Lens`
+##### `Lets.Lens`
 
 This series of exercises starts at first principles to derive the concept of a
 lens, as it was first described by Twan van Laarhoven. The derivation then goes
