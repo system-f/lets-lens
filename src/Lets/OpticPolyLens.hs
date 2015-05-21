@@ -55,6 +55,7 @@ import Prelude hiding (product)
 -- >>> import qualified Data.Map as Map(fromList)
 -- >>> import qualified Data.Set as Set(fromList)
 -- >>> import Data.Char(ord)
+-- >>> import Lets.Data
 
 data Lens s t a b =
   Lens
