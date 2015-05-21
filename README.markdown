@@ -2,8 +2,6 @@
 
 ![NICTA](http://i.imgur.com/sMXB9XB.jpg)
 
-### Abstract
-
 Let's Lens presents a series of exercises, in a similar format to
 [the NICTA functional programming course material](http://github.com/NICTA/course).
 The subject of the exercises is around the concept of lenses, initially proposed
