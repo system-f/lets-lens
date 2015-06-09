@@ -161,7 +161,7 @@ set =
 
 ----
 
--- | Observe that @fmap@ can be recovered from @traverse@ using @Identity@.
+-- | Observe that @foldMap@ can be recovered from @traverse@ using @Const@.
 --
 -- /Reminder:/ foldMap :: (Foldable t, Monoid b) => (a -> b) -> t a -> b
 foldMapT ::
