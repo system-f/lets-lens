@@ -501,10 +501,10 @@ addressL =
 
 -- |
 --
--- >>> get (suburbL |. addressL) fred
+-- >>> getSuburb fred
 -- "Fredville"
 --
--- >>> get (suburbL |. addressL) mary
+-- >>> getSuburb mary
 -- "Maryland"
 getSuburb ::
   Person
