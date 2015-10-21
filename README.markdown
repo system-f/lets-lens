@@ -29,7 +29,7 @@ of `error "todo: <function-name>"`.
 
 This module presents a series of exercises, representing lenses as a traditional
 pair of "`get` and `set`" functions. This representation may be beneficial as it
-easily appeals to an intuition of "what a lens is", however, it is outdated. 
+easily appeals to an intuition of "what a lens is", however, it is outdated.
 
 These exercises are useful to gain an initial understanding of the problems that
 lenses solve, as well as to gain an insight into the history of lenses and how
@@ -42,6 +42,8 @@ slightly altered representation of a lens, based on the `Store` comonad, which
 fuses the typical `get` and `set` operations into a data structure. This
 representation is described in detail in
 *Morris, Tony. "Asymmetric Lenses in Scala." (2012).*
+
+To run the tests, type `stack exec doctest -- -isrc src/Lets/GetSetLens.hs`.
 
 ##### `Lets.OpticPolyLens`
 
