@@ -1,9 +1,9 @@
 # Let's Lens
 
-![NICTA](http://i.imgur.com/sMXB9XB.jpg)
+![Data61](http://i.imgur.com/0h9dFhl.png)
 
 Let's Lens presents a series of exercises, in a similar format to
-[the NICTA functional programming course material](http://github.com/NICTA/course).
+[the Data61 functional programming course material](http://github.com/data61/fp-course).
 The subject of the exercises is around the concept of lenses, initially proposed
 by  Foster et al., to solve the view-update problem of relational databases.
 
