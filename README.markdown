@@ -1,6 +1,6 @@
 # Let's Lens
 
-![Data61](http://i.imgur.com/0h9dFhl.png)
+<img src="http://i.imgur.com/0h9dFhl.png" width="300px"/>
 
 Let's Lens presents a series of exercises, in a similar format to
 [the Data61 functional programming course material](http://github.com/data61/fp-course).
