@@ -5,7 +5,7 @@
 Let's Lens presents a series of exercises, in a similar format to
 [the Data61 functional programming course material](http://github.com/data61/fp-course).
 The subject of the exercises is around the concept of lenses, initially proposed
-by  Foster et al., to solve the view-update problem of relational databases.
+by Foster et al., to solve the view-update problem of relational databases.
 
 The theories around lenses have been advanced significantly in recent years,
 resulting in a library, implemented in Haskell, called `lens`.

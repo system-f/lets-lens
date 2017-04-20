@@ -314,14 +314,14 @@ setP ::
   Prism s t a b
   -> s
   -> Either t a
-setP =
+setP _ _ =
   error "todo: setP"
 
 getP ::
   Prism s t a b
   -> b
   -> t
-getP =
+getP _ _ =
   error "todo: getP"
 
 type Prism' a b =
@@ -345,7 +345,7 @@ modify ::
   -> (a -> b)
   -> s
   -> t
-modify =
+modify _ _ _ =
   error "todo: modify"
 
 -- | An alias for @modify@.
@@ -375,7 +375,7 @@ infixr 4 %~
   -> b
   -> s
   -> t
-(.~) =
+(.~) _ _ _ =
   error "todo: (.~)"
 
 infixl 5 .~
@@ -396,7 +396,7 @@ fmodify ::
   -> (a -> f b)
   -> s
   -> f t 
-fmodify =
+fmodify _ _ _ =
   error "todo: fmodify"
 
 -- |
@@ -412,7 +412,7 @@ fmodify =
   -> f b
   -> s
   -> f t
-(|=) =
+(|=) _ _ _ =
   error "todo: (|=)"
 
 infixl 5 |=
@@ -498,7 +498,7 @@ compose ::
   Lens s t a b
   -> Lens q r s t
   -> Lens q r a b
-compose =
+compose _ _ =
   error "todo: compose"
 
 -- | An alias for @compose@.
@@ -534,7 +534,7 @@ product ::
   Lens s t a b
   -> Lens q r c d
   -> Lens (s, q) (t, r) (a, c) (b, d)
-product =
+product _ _ =
   error "todo: product"
 
 -- | An alias for @product@.
@@ -564,7 +564,7 @@ choice ::
   Lens s t a b
   -> Lens q r a b
   -> Lens (Either s q) (Either t r) a b
-choice =
+choice _ _ =
   error "todo: choice"
 
 -- | An alias for @choice@.
