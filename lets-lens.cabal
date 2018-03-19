@@ -8,15 +8,15 @@ copyright:            Copyright (C) 2015 National ICT Australia Limited
 synopsis:             Source code for exercises on the lens concept
 category:             Education
 description:          Source code for exercises on the lens concept
-homepage:             https://github.com/NICTA/lets-lens
-bug-reports:          https://github.com/NICTA/lets-lens/issues
+homepage:             https://github.com/data61/lets-lens
+bug-reports:          https://github.com/data61/lets-lens/issues
 cabal-version:        >= 1.10
 build-type:           Custom
 extra-source-files:   changelog
 
 source-repository     head
   type:               git
-  location:           git@github.com:NICTA/lets-lens.git
+  location:           git@github.com:data61/lets-lens.git
 
 flag                  small_base
   description:        Choose the new, split-up base package.
