@@ -1,6 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Lets.Lens (
+  Persan(..), persanStrings, freddy, Json(..), _JsonObject, _JsonArray,
   fmapT
 , over
 , fmapTAgain
@@ -73,7 +74,7 @@ module Lets.Lens (
 , intOrLengthEven
 ) where
 
-import Control.Applicative(Applicative((<*>), pure))
+import Control.Applicative(Applicative((<*>), pure), liftA2)
 import Data.Char(toUpper)
 import Data.Foldable(Foldable(foldMap))
 import Data.Functor((<$>))
@@ -111,7 +112,7 @@ fmapT ::
   -> t a
   -> t b
 fmapT =
-  error "todo: fmapT"
+  \k -> getIdentity . traverse (Identity . k)
 
 -- | Let's refactor out the call to @traverse@ as an argument to @fmapT@.
 over :: 
@@ -120,7 +121,7 @@ over ::
   -> s
   -> t
 over =
-  error "todo: over"
+  \t k -> getIdentity . t (Identity . k)
 
 -- | Here is @fmapT@ again, passing @traverse@ to @over@.
 fmapTAgain ::
@@ -128,8 +129,8 @@ fmapTAgain ::
   (a -> b)
   -> t a
   -> t b
-fmapTAgain =
-  error "todo: fmapTAgain"
+fmapTAgain = over traverse
+ -- error "todo: fmapTAgain"
 
 -- | Let's create a type-alias for this type of function.
 type Set s t a b =
@@ -141,23 +142,38 @@ type Set s t a b =
 -- unwrapping.
 sets ::
   ((a -> b) -> s -> t)
-  -> Set s t a b  
-sets =
-  error "todo: sets"
+  -> (a -> Identity b)
+  -> s
+  -> Identity t  
+sets t k = Identity . t (getIdentity . k)
+-- over t k = getIdentity . t (Identity . k)
+
+-- over (sets f) = f
+-- sets (over f) = f
 
 mapped ::
   Functor f =>
   Set (f a) (f b) a b
+--(a -> Identity b) -> f a -> Identity (f b)
 mapped =
-  error "todo: mapped"
+  sets fmap
 
+-- (a -> b) -> f a -> f b
+
+{-
+type Set s t a b =
+  (a -> Identity b)
+  -> s
+  -> Identity t
+-}
 set ::
-  Set s t a b
+  -- (Set s t a b)
+  ((a -> Identity b) -> s -> Identity t)
   -> s
   -> b
   -> t
-set =
-  error "todo: set"
+set q s b =
+  over q (const b) s
 
 ----
 
@@ -165,13 +181,26 @@ set =
 --
 -- /Reminder:/ foldMap :: (Foldable t, Monoid b) => (a -> b) -> t a -> b
 foldMapT ::
-  (Traversable t, Monoid b) =>
-  (a -> b)
+  (Traversable t, Monoid m) =>
+  (a -> m)
   -> t a
-  -> b
+  -> m
 foldMapT =
-  error "todo: foldMapT"
+  \k -> getConst . traverse (Const . k)
+-- traverse :: (a -> f b) -> t a -> f (t b)
+-- traverse :: (a -> Identity b) -> t a -> Identity (t b)
+-- traverse :: (a -> Const m b) -> t a -> Const m (t b)
 
+
+-- 
+
+--  foldMapDefault f = getConst . traverse (Const . f)
+
+-- newtype Const m a = Const { getConst :: m }
+-- instance Monoid m => Applicative (Const m) where
+--   pure _ = Const mempty
+--   Const m <*> Const n = Const (mappend m n)
+ 
 -- | Let's refactor out the call to @traverse@ as an argument to @foldMapT@.
 foldMapOf ::
   ((a -> Const r b) -> s -> Const r t)
@@ -179,7 +208,7 @@ foldMapOf ::
   -> s
   -> r
 foldMapOf =
-  error "todo: foldMapOf"
+  \t k -> getConst . t (Const . k)
 
 -- | Here is @foldMapT@ again, passing @traverse@ to @foldMapOf@.
 foldMapTAgain ::
@@ -188,7 +217,7 @@ foldMapTAgain ::
   -> t a
   -> b
 foldMapTAgain =
-  error "todo: foldMapTAgain"
+  foldMapOf traverse
 
 -- | Let's create a type-alias for this type of function.
 type Fold s t a b =
@@ -205,14 +234,13 @@ folds ::
   -> (a -> Const b a)
   -> s
   -> Const t s
-folds =
-  error "todo: folds"
+folds t k = Const . t (getConst . k)
 
 folded ::
   Foldable f =>
   Fold (f a) (f a) a a
 folded =
-  error "todo: folded"
+  folds foldMap
 
 ----
 
@@ -222,14 +250,41 @@ type Get r s a =
   -> s
   -> Const r s
 
-get ::
-  Get a s a
+get :: -- aka view
+  ((a -> Const a a) -> s -> Const a s)
   -> s
   -> a
 get =
-  error "todo: get"
+  \f s -> getConst (f Const s)
 
 ----
+
+-- get :: Lens s t a b -> s -> a
+-- set :: Lens s t a b -> s -> b -> t
+
+
+-- get :: Lens' s a -> (s -> a)
+-- set :: Lens' s a -> (s -> a -> s)
+{-
+fmap id = id
+fmap f . fmap g = fmap (f . g)
+
+over l id = id
+over l f . over l g = over l (f . g)
+
+
+set l s (get l s) = s
+get l (set l s a) = a
+set l (set l s a) b = set l s b
+-}
+
+-- foo { bar = bar foo + 1 }
+-- foo { bar = bar foo { baz = .. 
+
+-- bar.baz +~ 1
+
+
+
 
 -- | Let's generalise @Identity@ and @Const r@ to any @Applicative@ instance.
 type Traversal s t a b =
@@ -241,24 +296,101 @@ type Traversal s t a b =
 
 -- | Traverse both sides of a pair.
 both ::
-  Traversal (a, a) (b, b) a b
-both =
-  error "todo: both"
+  Applicative f => (a -> f b) -> (a, a) -> f (b, b)
+  -- Traversal (a, a) (b, b) a b
+both f (a1, a2) =
+  liftA2' (,) (f a1) (f a2)
+--(,) <$> f a1 <*> f a2
+
+-- liftA2' (,) :: f b -> f b -> f (b, b)
+
+liftA2' :: Applicative f => (a -> b -> c) -> f a -> f b -> f c
+liftA2' f fa fb = 
+  f <$> fa <*> fb
+
+-- liftA2' (,) :: f a -> f b -> f (a, b)
+-- liftA2' (,) :: f b -> f b -> f (b, b)
+-- f :: a -> b -> c
+-- fa :: f a
+-- f <$> fa :: f (b -> c)
+
+-- fb :: f b
+-- (<*>) :: forall x y. f (x -> y) -> f x -> f y
+-- f <$> fa <*> fb :: f c
+-- ?  :: f c
+
 
 -- | Traverse the left side of @Either@.
 traverseLeft ::
-  Traversal (Either a x) (Either b x) a b
-traverseLeft =
-  error "todo: traverseLeft"
+  Applicative f =>
+  (a -> f b)
+  -> Either a x
+  -> f (Either b x)
+--  Traversal (Either a x) (Either b x) a b
+{-
+traverseLeft k (Left a) = Left <$> k a
+traverseLeft _ (Right x) = pure (Right x)
+-}
+-- traverseLeft f = fmap swapE . traverse f . swapE
+
+traverseLeft = swapped.traverse
+
+swapped :: Functor f => (Either a b -> f (Either c d)) -> Either b a -> f (Either d c)
+swapped f = fmap swapE . f . swapE
+
+swapE :: Either a b -> Either b a
+swapE (Left a) = Right a
+swapE (Right b) = Left b
 
 -- | Traverse the right side of @Either@.
 traverseRight ::
-  Traversal (Either x a) (Either x b) a b
-traverseRight =
-  error "todo: traverseRight"
+  Applicative f =>
+  (a -> f b)
+  -> Either x a
+  -> f (Either x b)
+  -- Traversal (Either x a) (Either x b) a b
+traverseRight _ (Left x) = pure (Left x)
+traverseRight k (Right a) = Right <$> k a
 
-type Traversal' a b =
-  Traversal a a b b
+type Traversal' s a =
+  Traversal s s a a
+
+data Persan =
+  Persan {
+    _firstName :: String -- firstName
+  , _middleName :: String -- middle name
+  , _surname :: String -- surname
+  , _age :: Int -- age
+  } deriving (Eq, Show)
+
+makeClassy ''Persan
+
+class HasPersan t where
+  persan :: Lens' t Persan
+  firstName :: Lens' t String
+  middleName :: Lens' t String
+  surname :: Lens' t String
+  age :: Lens' t Int
+
+instance HasPersan Persan where
+  persan = id
+
+data ImportantPersan = ImportantPersan
+  { _importantPersanTitle :: String
+  , _importantPersanPersan :: Persan
+  }
+
+makeClassy ''ImportantPersan
+instance HasPersan ImportantPersan where
+  persan = importantPersanPersan
+
+freddy :: Persan
+freddy = Persan "fred" "fredly" "fredness" 123
+
+persanStrings :: Traversal' Persan String
+-- Applicative f => (String -> f String) -> Persan -> f Persan
+persanStrings k (Persan f m s a) =
+  (\f' m' s' -> Persan f' m' s' a) <$> k f <*> k m <*> k s
 
 ----
 
@@ -297,8 +429,8 @@ prism ::
   (b -> t)
   -> (s -> Either t a)
   -> Prism s t a b
-prism =
-  error "todo: prism"
+prism to fr =
+  dimap fr (either pure (fmap to)) . right
 
 _Just ::
   Prism (Maybe a) (Maybe b) a b
@@ -309,6 +441,34 @@ _Nothing ::
   Prism (Maybe a) (Maybe a) () ()
 _Nothing =
   error "todo: _Nothing"
+
+
+data Json =
+  JsonArray [Json]
+  | JsonObject (Map String Json)
+  | JsonString String
+  | JsonNumber Double
+  | JsonBool Bool
+  | JsonNull
+  deriving (Eq, Show)
+
+makePrisms ''Json
+{-
+_JsonObject :: Prism' Json (Map String Json)
+_JsonObject =
+  prism
+    JsonObject
+    (\j -> case j of
+             JsonObject m -> Right m
+             _ -> Left j)
+-}
+_JsonArray :: Prism' Json [Json]
+_JsonArray =
+  prism
+    JsonArray
+    (\j -> case j of
+             JsonArray a -> Right a
+             _ -> Left j)
 
 setP ::
   Prism s t a b
@@ -421,10 +581,26 @@ infixl 5 |=
 --
 -- >>> modify fstL (*10) (3, "abc")
 -- (30,"abc")
+-- in the lens library, _1
 fstL ::
-  Lens (a, x) (b, x) a b
-fstL =
-  error "todo: fstL"
+  Functor f => (a -> f b) -> (a, x) -> f (b, x)
+  -- Lens (a, x) (b, x) a b
+fstL k (a, x) = 
+  (\b -> (b, x)) <$> k a
+
+-- k :: a -> f b
+-- a :: a
+-- x :: x
+-- ? :: f (b, x)
+
+{-
+type Lens s t a b =
+  forall f.
+  Functor f =>
+  (a -> f b)
+  -> s
+  -> f t
+-}
 
 -- |
 --
@@ -432,34 +608,40 @@ fstL =
 -- (13,"abcdef")
 sndL ::
   Lens (x, a) (x, b) a b
-sndL =
-  error "todo: sndL"
+sndL k (x,a) = -- (,) x <$> k a
+  (,) x <$> k a
 
 -- |
 --
--- >>> get (mapL 3) (Map.fromList (map (\c -> (ord c - 96, c)) ['a'..'d']))
+-- >>> get (mapL 3) (Map.fromList [(1,'a'),(3,'c')])
 -- Just 'c'
 --
--- >>> get (mapL 33) (Map.fromList (map (\c -> (ord c - 96, c)) ['a'..'d']))
+-- >>> get (mapL 33) (Map.fromList [(1,'a'),(3,'c')])
 -- Nothing
 --
--- >>> set (mapL 3) (Map.fromList (map (\c -> (ord c - 96, c)) ['a'..'d'])) (Just 'X')
--- fromList [(1,'a'),(2,'b'),(3,'X'),(4,'d')]
+-- >>> set (mapL 3) (Map.fromList [(1,'a'),(3,'c')]) (Just 'X')
+-- fromList [(1,'a'),(3,'X')]
 --
--- >>> set (mapL 33) (Map.fromList (map (\c -> (ord c - 96, c)) ['a'..'d'])) (Just 'X')
--- fromList [(1,'a'),(2,'b'),(3,'c'),(4,'d'),(33,'X')]
+-- >>> set (mapL 33) (Map.fromList [(1,'a'),(3,'c')]) (Just 'X')
+-- fromList [(1,'a'),(3,'c'),(33,'X')]
 --
--- >>> set (mapL 3) (Map.fromList (map (\c -> (ord c - 96, c)) ['a'..'d'])) Nothing
--- fromList [(1,'a'),(2,'b'),(4,'d')]
---
--- >>> set (mapL 33) (Map.fromList (map (\c -> (ord c - 96, c)) ['a'..'d'])) Nothing
--- fromList [(1,'a'),(2,'b'),(3,'c'),(4,'d')]
+-- Map.lookup :: Ord k => k -> Map k v -> Maybe v
+-- Map.insert :: Ord k => k -> v -> Map k v -> Map k v
+-- Map.delete :: Ord k => k -> Map k v -> Map k v
+
 mapL ::
   Ord k =>
   k
   -> Lens (Map k v) (Map k v) (Maybe v) (Maybe v)
-mapL =
-  error "todo: mapL"
+--(Functor f, Ord k) => k -> (Maybe v -> f (Maybe v)) -> Map k v -> f (Map k v)
+
+mapL k p m = p (Map.lookup k m) <&> \x -> case x of
+  Just v -> Map.insert k v m
+  Nothing -> Map.delete k m 
+
+
+(<&>) :: Functor f => f a -> (a -> b) -> f b
+(<&>) = flip fmap
 
 -- |
 --
@@ -481,11 +663,85 @@ mapL =
 -- >>> set (setL 33) (Set.fromList [1..5]) False
 -- fromList [1,2,3,4,5]
 setL ::
+-- Set.member :: Ord k => k -> Set.Set k -> Bool
+-- Set.insert :: Ord k => k -> Set.Set k -> Set.Set k
+-- Set.delete :: Ord k => k -> Set.Set k -> Set.Set k
   Ord k =>
-  k
-  -> Lens (Set.Set k) (Set.Set k) Bool Bool
-setL =
-  error "todo: setL"
+  k -> Lens (Set.Set k) (Set.Set k) Bool Bool
+--(Ord k, Functor f) => k -> (Bool -> f Bool) -> Set.Set k -> f (Set.Set k)
+setL k p s =
+  --  Bool -> Set.Set k
+-- (\b -> bool Set.delete Set.insert b k s) <$> (p (Set.member k s))
+  (\b -> case b of True -> Set.insert k s
+                   False -> Set.delete k s) <$> p (Set.member k s)
+
+-- get (setL 4) (Set.fromList [1,2,3]) ==> False
+-- get (setL 3) (Set.fromList [1,2,3]) ==> True
+-- set (setL 4) True (Set.fromList [1,2,3]) ==> Set.fromList [1,2,3,4]
+-- set (setL 4) False (Set.fromList [1,2,3]) ==> Set.fromList [1,2,3]
+-- set (setL 3) True (Set.fromList [1,2,3]) ==> Set.fromList [1,2,3]
+-- set (setL 3) False (Set.fromList [1,2,3]) ==> Set.fromList [1,2]
+-- over (setL 4) not (Set.fromList [1]) ==> Set.fromList [1,4]
+-- over (setL 4) not (Set.fromList [1,4]) ==> Set.fromList [1] 
+
+{-
+newtype Cont r a = Cont ((a -> r) -> r) deriving Functor
+
+-- fmap f . fmap g = fmap (f . g)
+-- fmap id = id
+
+
+ -- (.) :: (b -> c) -> (a -> b) -> a -> c
+class Contravariant f where
+  -- contramap id = id
+  -- contramap f . contramap g = contramap (g . f)
+  contramap :: (a -> b) -> (f b -> f a)
+
+class Profunctor p where
+  -- dimap id f . dimap id g = dimap id (f . g)
+  -- dimap f id . dimap g id = dimap (g . f) id
+  -- dimap id id = id
+  dimap :: (a -> b) -> (c -> d) -> p b c -> p a d
+
+instance Profunctor (->) where
+  -- dimap :: (a -> b) -> (c -> d) -> (->) b c -> (->) a d
+  -- dimap :: (a -> b) -> (c -> d) -> (b -> c) -> a -> d
+  dimap ab cd bc = cd . bc . ab
+
+
+newtype Kleisli m a b = Kleisli (a -> m b)
+
+data Predicate a = Predicate (a -> Bool)
+
+type Lens s t a b = forall f. Functor f                    => (a -> f b) -> s -> f t
+type Traversal s t a b = forall f. Applicative f           => (a -> f b) -> s -> f t
+type Getter s a = forall f. (Functor f, Contravariant f)   => (a -> f a) -> s -> f s
+type Fold s a = forall f. (Applicative f, Contravariant f) => (a -> f a) -> s -> f s
+
+
+type Iso s t a b = forall p f. (Profunctor p, Functor f)   => p a (f b) -> p s (f t)
+
+-- Lens s t a b = exists c. s -> (a, c), (b, c) -> t 
+
+-- Lens' s a = exists c. s <-> (a, c)
+-- Prism' s a = exists c. s <-> Either a c
+-- Prism s t a b = exists c. (s -> Either a c, Either b c -> t)
+
+
+lens :: (s -> a) -> (s -> b -> t) -> Lens s t a b
+lens sa sbt f s = sbt s <$> f (sa s)
+
+iso :: (s -> a) -> (b -> t) -> Iso s t a b
+iso sa bt = dimap sa (fmap bt)  
+
+
+
+type Prism s t a b = forall p f. (Choice p, Applicative f) => p a (f b) -> p s (f t)
+type Iso s t a b = (s -> a, b -> t)
+
+-}
+
+
 
 -- |
 --
