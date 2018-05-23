@@ -437,6 +437,11 @@ sndL =
 
 -- |
 --
+-- To work on `Map k a`:
+--   Map.lookup :: Ord k => k -> Map k a -> Maybe a
+--   Map.insert :: Ord k => k -> a -> Map k a -> Map k a
+--   Map.delete :: Ord k => k -> Map k a -> Map k a
+--
 -- >>> get (mapL 3) (Map.fromList (map (\c -> (ord c - 96, c)) ['a'..'d']))
 -- Just 'c'
 --
@@ -462,6 +467,11 @@ mapL =
   error "todo: mapL"
 
 -- |
+--
+-- To work on `Set a`:
+--   Set.insert :: Ord a => a -> Set a -> Set a
+--   Set.member :: Ord a => a -> Set a -> Bool
+--   Set.delete :: Ord a => a -> Set a -> Set a
 --
 -- >>> get (setL 3) (Set.fromList [1..5])
 -- True
