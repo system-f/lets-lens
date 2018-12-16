@@ -1,7 +1,9 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Lets.Lens (
-  fmapT
+  Persooon(..), cellNumbers, cellNumbers'
+, fmapT
+, Json(..), _JBool, _JNull, _JArray, _JPerson, arrayBool, arrayNumbers
 , over
 , fmapTAgain
 , Set
@@ -84,7 +86,7 @@ import qualified Data.Set as Set(Set, insert, delete, member)
 import Data.Traversable(Traversable(traverse))
 import Lets.Data(AlongsideLeft(AlongsideLeft, getAlongsideLeft), AlongsideRight(AlongsideRight, getAlongsideRight), Identity(Identity, getIdentity), Const(Const, getConst), Tagged(Tagged, getTagged), IntOr(IntOrIs, IntOrIsNot), IntAnd(IntAnd), Person(Person), Locality(Locality), Address(Address), bool)
 import Lets.Choice(Choice(left, right))
-import Lets.Profunctor(Profunctor(dimap))
+import Lets.Profunctor(Profunctor(dimap), rmap)
 import Prelude hiding (product)
 
 -- $setup
@@ -119,8 +121,8 @@ over ::
   -> (a -> b)
   -> s
   -> t
-over =
-  error "todo: over"
+over k f =
+  getIdentity . k (Identity . f)
 
 -- | Here is @fmapT@ again, passing @traverse@ to @over@.
 fmapTAgain ::
@@ -226,8 +228,8 @@ get ::
   Get a s a
   -> s
   -> a
-get =
-  error "todo: get"
+get t =
+  getConst . t Const
 
 ----
 
@@ -239,26 +241,57 @@ type Traversal s t a b =
   -> s
   -> f t
 
+--  (a -> f b) -> t a -> f (t b)
+
+
+{-
+type Lens s t a b =
+  forall f.
+  Functor f => (a -> f b) -> s -> f t
+-}
+
 -- | Traverse both sides of a pair.
 both ::
   Traversal (a, a) (b, b) a b
 both =
-  error "todo: both"
+-- \f -> \(a1, a2) -> (\asdf -> asdf <*> f a2) ((,) <$> f a1)
+-- \f -> \(a1, a2) -> (,) <$> f a1 <*> f a2
+  \f -> \(a1, a2) -> pure (,) <*> f a1 <*> f a2
 
 -- | Traverse the left side of @Either@.
 traverseLeft ::
   Traversal (Either a x) (Either b x) a b
 traverseLeft =
-  error "todo: traverseLeft"
+  \f e -> case e of
+    Left a -> Left <$> f a
+    Right b -> pure (Right b)
 
 -- | Traverse the right side of @Either@.
 traverseRight ::
   Traversal (Either x a) (Either x b) a b
 traverseRight =
-  error "todo: traverseRight"
+  \f e -> case e of
+    Left a -> pure (Left a)
+    Right b -> Right <$> f b
 
 type Traversal' a b =
   Traversal a a b b
+
+data Persooon = Persooon
+  String -- cell#1
+  String -- cell#2
+  Int -- age
+  String -- cell#3
+  String -- name
+  deriving (Eq, Show)
+
+cellNumbers :: Traversal' Persooon String
+cellNumbers =
+  \f (Persooon c1 c2 a c3 n) -> (\c1' c2' c3' -> Persooon c1' c2' a c3' n) <$> f c1 <*> f c2 <*> f c3
+
+cellNumbers' :: Traversal' Persooon String
+cellNumbers' =
+  \f (Persooon c1 c2 a c3 n) -> (\c2' c1' c3' -> Persooon c1' c2' a c3' n) <$> f c2 <*> f c1 <*> f c3
 
 ----
 
@@ -286,46 +319,110 @@ type Prism s t a b =
 _Left ::
   Prism (Either a x) (Either b x) a b
 _Left =
-  error "todo: _Left"
+  \s -> rmap (either (fmap Left) (pure . Right)) (left s)
 
 _Right ::
   Prism (Either x a) (Either x b) a b 
 _Right =
-  error "todo: _Right"
+  \s -> rmap (either (pure . Left) (fmap Right)) (right s)
 
 prism ::
   (b -> t)
   -> (s -> Either t a)
   -> Prism s t a b
 prism =
-  error "todo: prism"
+  \to fr -> \f ->
+    dimap fr (either pure (fmap to)) (right f)
+
+prism' :: (a -> b) -> (b -> Maybe a) -> Prism b b a a
+prism' = \to fr -> prism to (\b -> maybe (Left b) Right (fr b))
 
 _Just ::
   Prism (Maybe a) (Maybe b) a b
 _Just =
-  error "todo: _Just"
+  prism
+    Just
+    (maybe (Left Nothing) Right)
+
+-- data Maybe a = Just a | Nothing
+-- data Maybe a = Just a | Nothing ()
+-- type Maybe a = Either () a
 
 _Nothing ::
   Prism (Maybe a) (Maybe a) () ()
 _Nothing =
-  error "todo: _Nothing"
+  prism'
+    (\() -> Nothing)
+    (\m -> case m of
+      Nothing -> Just ()
+      Just _ -> Nothing)
 
 setP ::
   Prism s t a b
   -> s
   -> Either t a
-setP _ _ =
-  error "todo: setP"
+setP p s =
+  either Right Left (p Left s)
 
 getP ::
   Prism s t a b
   -> b
   -> t
-getP _ _ =
-  error "todo: getP"
+getP p =
+   getIdentity . getTagged . p . Tagged . Identity
 
 type Prism' a b =
   Prism a a b b
+
+data Json =
+  JBool Bool
+  | JNull ()
+  | JArray [Json]
+  | JPerson (String, Persooon)
+  deriving (Eq, Show)
+
+_JBool :: Prism' Json Bool 
+_JBool =
+  prism'
+    JBool
+    (\j -> case j of
+      JBool b -> Just b
+      _ -> Nothing)
+
+_JNull :: Prism' Json ()
+_JNull =
+  prism'
+    JNull
+    (\j -> case j of
+      JNull () -> Just ()
+      _ -> Nothing)
+
+_JArray :: Prism' Json [Json]
+_JArray =
+  prism'
+    JArray
+    (\j -> case j of
+      JArray js -> Just js
+      _ -> Nothing)
+
+_JPerson :: Prism' Json (String, Persooon)
+_JPerson =
+  prism' 
+    JPerson
+    (\j -> case j of
+      JPerson p -> Just p
+      _ -> Nothing)
+
+-- given a Json, if it is an array, negate all Bool
+
+arrayBool :: Traversal' Json Bool
+arrayBool = _JArray . traverse . _JBool
+
+-- Json -> array -> JPerson -> sndL -> cellNumbers
+
+
+arrayNumbers :: Traversal' Json String
+arrayNumbers = _JArray . traverse . _JPerson . sndL . cellNumbers
 
 ----
 
@@ -345,8 +442,8 @@ modify ::
   -> (a -> b)
   -> s
   -> t
-modify _ _ _ =
-  error "todo: modify"
+modify l f s =
+  getIdentity (l (Identity . f) s)
 
 -- | An alias for @modify@.
 (%~) ::
@@ -424,7 +521,7 @@ infixl 5 |=
 fstL ::
   Lens (a, x) (b, x) a b
 fstL =
-  error "todo: fstL"
+  \a2fb -> \(a, x) -> fmap (\b -> (b, x)) (a2fb a)
 
 -- |
 --
@@ -433,7 +530,7 @@ fstL =
 sndL ::
   Lens (x, a) (x, b) a b
 sndL =
-  error "todo: sndL"
+  \a2fb -> \(x, a) -> fmap (\b -> (x, b)) (a2fb a)
 
 -- |
 --

@@ -28,6 +28,12 @@ class Profunctor p => Choice p where
   right =
     diswap . left
 
+leftFunction :: ((->) a b) -> ((->) (Either a c) (Either b c))
+leftFunction f e_ac =
+  case e_ac of
+    Left a -> Left (f a)
+    Right c -> Right c
+    
 instance Choice (->) where
   left f =
     either (Left . f) Right

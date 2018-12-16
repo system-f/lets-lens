@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Lets.OpticPolyLens (
-  Lens(..)
+  Lens(..), tt1, tt2
 , getsetLaw
 , setgetLaw
 , setsetLaw
@@ -59,6 +59,9 @@ import Prelude hiding (product)
 data Lens s t a b =
   Lens
     (forall f. Functor f => (a -> f b) -> s -> f t)
+
+-- data Const a b = Const { getConst :: a }
+-- data Identity a = Identity a
 
 get ::
   Lens s t a b
@@ -119,12 +122,15 @@ setsetLaw l a b1 b2 =
 --
 -- prop> let types = (x :: Int, y :: String) in modify sndL id (x, y) == (x, y)
 modify ::
-  Lens s t a b
-  -> (a -> b)
-  -> s
-  -> t
+-- Functor f => (a -> f b) -> s -> f t
+  Lens s t a b -> (a -> b) -> s -> t
 modify =
-  error "todo: modify"
+  \(Lens l) -> \f -> \s -> getIdentity (l (\a -> Identity (f a)) s)
+
+-- l :: (a -> f b) -> s -> f t
+-- f :: a -> b
+-- s :: s
+-- ? :: t
 
 -- | An alias for @modify@.
 (%~) ::
@@ -154,7 +160,16 @@ infixr 4 %~
   -> s
   -> t
 (.~) =
-  error "todo: (.~)"
+--  \l b -> modify l (\_ -> b)
+-- \l b -> modify l (const b)
+-- \l b -> (modify l . const) b
+  \l -> modify l . const
+
+-- \x -> f (g x)
+-- f . g
+
+--   \(Lens l) -> \b -> \s -> getIdentity (l (\_ -> Identity b) s)
+--   \(Lens l) -> \f -> \s -> getIdentity (l (\a -> Identity (f a)) s)
 
 infixl 5 .~
 
@@ -175,7 +190,7 @@ fmodify ::
   -> s
   -> f t 
 fmodify =
-  error "todo: fmodify"
+  \(Lens l) -> l
 
 -- |
 --
@@ -191,7 +206,8 @@ fmodify =
   -> s
   -> f t
 (|=) =
-  error "todo: (|=)"
+-- \l b -> fmodify l (\_ -> b)
+  \l -> fmodify l . const
 
 infixl 5 |=
 
@@ -208,7 +224,17 @@ infixl 5 |=
 fstL ::
   Lens (a, x) (b, x) a b
 fstL =
-  error "todo: fstL"
+--Lens (\a2fb -> \(a, x) -> (\fb -> fmap (\b -> (b, x)) fb) (a2fb a))
+  Lens (\a2fb -> \(a, x) -> fmap (\b -> (b, x)) (a2fb a))
+
+data Persoon = Persoon Int String
+
+nameLens :: Lens Persoon Persoon String String
+nameLens = 
+  Lens (\f (Persoon age name) -> fmap (\name' -> Persoon age name') (f name))
+
+-- (\x -> f x) a
+-- f a
 
 -- |
 --
@@ -223,7 +249,7 @@ fstL =
 sndL ::
   Lens (x, a) (x, b) a b
 sndL =
-  error "todo: sndL"
+  Lens (\a2fb -> \(x, a) -> fmap (\b -> (x, b)) (a2fb a))
 
 -- |
 --
@@ -249,7 +275,12 @@ mapL ::
   k
   -> Lens (Map k v) (Map k v) (Maybe v) (Maybe v)
 mapL =
-  error "todo: mapL"
+  \k -> Lens (\f -> \m -> fmap (\may -> case may of
+    Nothing -> Map.delete k m
+    Just v -> Map.insert k v m) (f (Map.lookup k m)))
+
+-- f :: (Maybe v -> f (Maybe v))
+-- m :: Map k v
 
 -- |
 --
@@ -275,7 +306,14 @@ setL ::
   k
   -> Lens (Set k) (Set k) Bool Bool
 setL =
-  error "todo: setL"
+-- \k -> Lens (\f s -> fmap (\b -> bool (Set.delete k s) (Set.insert k s) b) (f (Set.member k s)))
+-- \k -> Lens (\f s -> fmap (bool (Set.delete k s) (Set.insert k s)) (f (Set.member k s)))
+-- \k -> Lens (\f s -> fmap (\b -> bool (Set.delete k s) (Set.insert k s) b) (f (Set.member k s)))
+  \k -> Lens (\f s -> fmap (\b -> bool Set.delete Set.insert b k s) (f (Set.member k s)))
+
+-- if p then t else f
+-- case of
+-- bool f t p
 
 -- |
 --
@@ -289,7 +327,7 @@ compose ::
   -> Lens q r s t
   -> Lens q r a b
 compose =
-  error "todo: compose"
+  \(Lens l1) (Lens l2) -> Lens (l2 . l1)
 
 -- | An alias for @compose@.
 (|.) ::
@@ -311,7 +349,14 @@ infixr 9 |.
 identity ::
   Lens a b a b
 identity =
-  error "todo: identity"
+  Lens id
+
+tt1 :: Lens a a a a 
+tt1 = Lens id
+
+-- LAWS!
+tt2 :: Lens a a a a
+tt2 = Lens (\f a -> fmap (const a) (f a))
 
 -- |
 --
@@ -325,7 +370,11 @@ product ::
   -> Lens q r c d
   -> Lens (s, q) (t, r) (a, c) (b, d)
 product =
-  error "todo: product"
+  \(Lens l1) (Lens l2) ->
+    Lens (\f (s, q) ->
+      getAlongsideRight (l2 (\x2 ->
+        AlongsideRight (getAlongsideLeft (l1 (\x1 ->
+          AlongsideLeft (f (x1, x2))) s))) q))
 
 -- | An alias for @product@.
 (***) ::
@@ -355,7 +404,10 @@ choice ::
   -> Lens q r a b
   -> Lens (Either s q) (Either t r) a b
 choice =
-  error "todo: choice"
+  \(Lens l1) (Lens l2) ->
+    Lens (\f e -> case e of
+      Left s -> fmap Left (l1 f s)
+      Right q -> fmap Right (l2 f q))
 
 -- | An alias for @choice@.
 (|||) ::
@@ -450,7 +502,7 @@ getSuburb ::
   Person
   -> String
 getSuburb =
-  error "todo: getSuburb"
+  get (suburbL |. addressL)
 
 
 -- |
