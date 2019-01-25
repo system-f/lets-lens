@@ -3,9 +3,11 @@
 
 # CABAL
 /dist
+/dist-newstyle
 /cabal-dev
 /.cabal-sandbox
 /cabal.sandbox.config
+.ghc.environment.*
 
 # Haskell Program Coverage
 /.hpc
