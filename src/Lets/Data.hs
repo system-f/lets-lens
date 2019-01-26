@@ -16,7 +16,6 @@ module Lets.Data (
 , Identity(..)
 , AlongsideLeft(..)
 , AlongsideRight(..)
-, bool
 ) where
 
 import Control.Applicative(Applicative(..))
@@ -172,22 +171,10 @@ instance Functor f => Functor (AlongsideLeft f b) where
 
 data AlongsideRight f a b =
   AlongsideRight {
-    getAlongsideRight :: 
+    getAlongsideRight ::
       f (a, b)
   }
 
 instance Functor f => Functor (AlongsideRight f a) where
   fmap f (AlongsideRight x) =
     AlongsideRight (fmap (\(a, b) -> (a, f b)) x)
-
-----
-
-bool ::
-  a
-  -> a
-  -> Bool
-  -> a
-bool f _ False =
-  f
-bool _ t True =
-  t

@@ -7,6 +7,7 @@ module Lets.GetSetLens (
 , set
 , modify
 , (%~)
+, (.~)
 , fmodify
 , (|=)
 , fstL
