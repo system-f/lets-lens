@@ -9,6 +9,7 @@ module Lets.OpticPolyLens (
 , set
 , modify
 , (%~)
+, (.~)
 , fmodify
 , (|=)
 , fstL

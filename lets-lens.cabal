@@ -4,8 +4,8 @@ license:              BSD3
 license-file:         LICENCE
 author:               Tony Morris <ʇǝu˙sıɹɹoɯʇ@ןןǝʞsɐɥ>
 maintainer:           Tony Morris <ʇǝu˙sıɹɹoɯʇ@ןןǝʞsɐɥ>
-copyright:            Copyright (C) 2015-2016 National ICT Australia Limited
-copyright:            Copyright (c) 2017-2018, Commonwealth Scientific and Industrial Research Organisation (CSIRO) ABN 41 687 119 230.
+copyright:            Copyright (C) 2015-2016 National ICT Australia Limited,
+                      Copyright (c) 2017-2018, Commonwealth Scientific and Industrial Research Organisation (CSIRO) ABN 41 687 119 230.
 synopsis:             Source code for exercises on the lens concept
 category:             Education
 description:          Source code for exercises on the lens concept
@@ -27,7 +27,7 @@ library
 
   build-depends:      base >= 4.8 && < 5
                       , containers >= 0.4.0.0
-                      
+
   ghc-options:        -Wall
                       -fno-warn-unused-binds
                       -fno-warn-unused-do-bind
@@ -44,7 +44,7 @@ library
                       Lets.OpticPolyLens
                       Lets.Profunctor
                       Lets.StoreLens
-                      
+
 test-suite            doctests
   type:
                       exitcode-stdio-1.0
