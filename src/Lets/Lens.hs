@@ -90,6 +90,7 @@ import Prelude hiding (product)
 -- $setup
 -- >>> import qualified Data.Map as Map(fromList)
 -- >>> import qualified Data.Set as Set(fromList)
+-- >>> import Data.Bool(bool)
 -- >>> import Data.Char(ord)
 -- >>> import Lets.Data
 
