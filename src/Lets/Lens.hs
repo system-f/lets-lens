@@ -783,13 +783,13 @@ intOrP =
 
 -- |
 --
--- >> over intOrP (even . length) (IntOrIsNot "abc")
+-- >> intOrLengthEven (IntOrIsNot "abc")
 -- IntOrIsNot False
 --
--- >>> over intOrP (even . length) (IntOrIsNot "abcd")
+-- >>> intOrLengthEven (IntOrIsNot "abcd")
 -- IntOrIsNot True
 --
--- >>> over intOrP (even . length) (IntOrIs 10)
+-- >>> intOrLengthEven (IntOrIs 10)
 -- IntOrIs 10
 intOrLengthEven ::
   IntOr [a]
