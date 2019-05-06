@@ -1,0 +1,11 @@
+#! /bin/bash
+
+YELLOW=$(tput setaf 3)
+RESET=$(tput sgr0)
+
+if [ $# -ne 0 ]; then
+  printf "\n${YELLOW}Args supplied => Will only run doctests in file $1${RESET}\n\n"
+fi
+
+cabal test doctests --test-options="$1"
+
