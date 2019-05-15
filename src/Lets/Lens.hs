@@ -71,6 +71,8 @@ module Lets.Lens (
 , intOrIntP
 , intOrP
 , intOrLengthEven
+, stuffs
+, Stuff(..)
 ) where
 
 import Control.Applicative(Applicative((<*>), pure))
@@ -111,8 +113,12 @@ fmapT ::
   (a -> b)
   -> t a
   -> t b
-fmapT =
-  error "todo: fmapT"
+fmapT f =
+  getIdentity . traverse (Identity . f)
+
+-- traverse :: Applicative f => (a -> f b) -> t a -> f (t b)
+-- ?        ::                  (a ->   b) -> t a ->   (t b)
+
 
 -- | Let's refactor out the call to @traverse@ as an argument to @fmapT@.
 over :: 
@@ -120,8 +126,8 @@ over ::
   -> (a -> b)
   -> s
   -> t
-over =
-  error "todo: over"
+over t f =
+  getIdentity . t (Identity . f)
 
 -- | Here is @fmapT@ again, passing @traverse@ to @over@.
 fmapTAgain ::
@@ -130,7 +136,7 @@ fmapTAgain ::
   -> t a
   -> t b
 fmapTAgain =
-  error "todo: fmapTAgain"
+  over traverse
 
 -- | Let's create a type-alias for this type of function.
 type Set s t a b =
@@ -170,8 +176,13 @@ foldMapT ::
   (a -> b)
   -> t a
   -> b
-foldMapT =
-  error "todo: foldMapT"
+foldMapT f =
+  getConst . traverse (Const . f)
+
+{-
+  Const f <*> Const a =
+    Const (f `mappend` a)
+-}
 
 -- | Let's refactor out the call to @traverse@ as an argument to @foldMapT@.
 foldMapOf ::
@@ -179,8 +190,8 @@ foldMapOf ::
   -> (a -> r)
   -> s
   -> r
-foldMapOf =
-  error "todo: foldMapOf"
+foldMapOf t f =
+  getConst . t (Const . f)
 
 -- | Here is @foldMapT@ again, passing @traverse@ to @foldMapOf@.
 foldMapTAgain ::
@@ -189,7 +200,7 @@ foldMapTAgain ::
   -> t a
   -> b
 foldMapTAgain =
-  error "todo: foldMapTAgain"
+  foldMapOf traverse
 
 -- | Let's create a type-alias for this type of function.
 type Fold s t a b =
@@ -234,29 +245,74 @@ get =
 
 -- | Let's generalise @Identity@ and @Const r@ to any @Applicative@ instance.
 type Traversal s t a b =
-  forall f.
-  Applicative f =>
-  (a -> f b)
-  -> s
-  -> f t
+  forall f. Applicative f => (a -> f b) -> s -> f t
+
+{-
+data Lens s t a b =
+  Lens
+    (forall f. Functor f => (a -> f b) -> s -> f t)
+
+type Lens s t a b =
+  forall f. Functor f => (a -> f b) -> s -> f t
+-}
+
 
 -- | Traverse both sides of a pair.
 both ::
   Traversal (a, a) (b, b) a b
 both =
-  error "todo: both"
+  \f -> \(a1, a2) -> (,) <$> f a1 <*> f a2
+
+-- f :: a -> f b
+-- a1 :: a
+-- a2 :: a
+
+{-
+\x y -> (,) <$> x <*> y :: Applicative f => f a1 -> f a2 -> f (a1, a2)
+-}
+-- Applicative f =>
+-- f a1 :: f b
+-- f a2 :: f b
+-- ? :: f (b, b)
+
+data Stuff =
+  Stuff
+    String
+    String
+    Int
+    String
+    [Double]
+  deriving (Eq, Show)
+
+stuffs :: Traversal Stuff Stuff String String
+stuffs =
+  \f (Stuff s1 s2 n s3 ds) -> 
+    (\s1' s2' s3' -> Stuff s1' s2' n s3' ds) <$> f s1 <*> f s2 <*> f s3
+
 
 -- | Traverse the left side of @Either@.
 traverseLeft ::
   Traversal (Either a x) (Either b x) a b
 traverseLeft =
-  error "todo: traverseLeft"
+  \f -> \e -> case e of
+    Left a -> fmap Left (f a)
+    Right x -> pure (Right x)
+
+-- e :: Either a x
+-- f :: a -> f b
+-- a :: a
+
+-- f a :: f b
+-- x :: x
+-- ? :: f (Either b x)
 
 -- | Traverse the right side of @Either@.
 traverseRight ::
   Traversal (Either x a) (Either x b) a b
 traverseRight =
-  error "todo: traverseRight"
+  \f e -> case e of
+    Left x -> pure (Left x)
+    Right a -> fmap Right (f a)
 
 type Traversal' a b =
   Traversal a a b b
@@ -284,32 +340,61 @@ type Prism s t a b =
   p a (f b)
   -> p s (f t)
 
+-- dimap :: (b -> a) -> (c -> d) -> p a c -> p b d
+-- left :: p a b -> p (Either a c) (Either b c)
+-- right :: p a b -> p (Either c a) (Either c b)
+
 _Left ::
   Prism (Either a x) (Either b x) a b
 _Left =
-  error "todo: _Left"
+  prism
+    Left
+    (\e -> case e of
+        Left a ->
+          Right a
+        Right x ->
+          Left (Right x))
 
 _Right ::
   Prism (Either x a) (Either x b) a b 
 _Right =
   error "todo: _Right"
 
+-- _Array :: Prism Json [Json]
+-- _Object :: Prism Json [(String, Json)]
+-- key :: String -> Prism Json (Maybe Json)
+-- _Bool :: Prism Json Bool
+-- _Null :: Prism Json ()
+
 prism ::
   (b -> t)
   -> (s -> Either t a)
   -> Prism s t a b
 prism =
-  error "todo: prism"
+  \to fr ->
+    dimap fr (either pure (fmap to)) . right
 
 _Just ::
   Prism (Maybe a) (Maybe b) a b
 _Just =
-  error "todo: _Just"
+  prism
+    Just
+    (\m -> case m of
+      Nothing ->
+        Left Nothing
+      Just a ->
+        Right a)
 
 _Nothing ::
   Prism (Maybe a) (Maybe a) () ()
 _Nothing =
-  error "todo: _Nothing"
+  prism
+    (\() -> Nothing)
+    (\m -> case m of
+      Nothing ->
+        Right ()
+      Just x ->
+        Left (Just x))
 
 setP ::
   Prism s t a b

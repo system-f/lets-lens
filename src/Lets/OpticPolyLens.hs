@@ -51,31 +51,39 @@ import qualified Data.Set as Set(insert, delete, member)
 import Lets.Data(AlongsideLeft(AlongsideLeft, getAlongsideLeft), AlongsideRight(AlongsideRight, getAlongsideRight), Identity(Identity, getIdentity), Const(Const, getConst), IntAnd(IntAnd), Person(Person), Locality(Locality), Address(Address))
 import Prelude hiding (product)
 
--- $setup
--- >>> import qualified Data.Map as Map(fromList)
--- >>> import qualified Data.Set as Set(fromList)
--- >>> import Data.Bool(bool)
--- >>> import Data.Char(ord)
--- >>> import Lets.Data
+import qualified Data.Map as Map(fromList)
+import qualified Data.Set as Set(fromList)
+import Data.Bool(bool)
+import Data.Char(ord)
+import Lets.Data
 
 data Lens s t a b =
   Lens
     (forall f. Functor f => (a -> f b) -> s -> f t)
+  --(forall f. Functor f => (a -> Identity a) -> s -> Identity s)
+  --(forall f. Functor f => (a -> Const a b) -> s -> Const a t)
 
+-- type Lens s t a b =
+--   forall f. Functor f => (a -> f b) -> s -> f t
+
+-- type Traversal s t a b =
+--   forall f. Applicative f => (a -> f b) -> s -> f t
+
+-- data Const x y = Const x
 get ::
   Lens s t a b
   -> s
   -> a
 get (Lens r) =
-  getConst . r Const
+  \s -> getConst (r Const s)
 
 set ::
   Lens s t a b
   -> s
   -> b
   -> t
-set (Lens r) a b =
-  getIdentity (r (const (Identity b)) a)
+set (Lens r) =
+  \s -> \b -> getIdentity (r (\_ -> Identity b) s)
 
 -- | The get/set law of lenses. This function should always return @True@.
 getsetLaw ::
@@ -125,8 +133,8 @@ modify ::
   -> (a -> b)
   -> s
   -> t
-modify =
-  error "todo: modify"
+modify (Lens r) =
+  \k -> \s -> getIdentity (r (\a -> Identity (k a)) s)
 
 -- | An alias for @modify@.
 (%~) ::
@@ -156,7 +164,17 @@ infixr 4 %~
   -> s
   -> t
 (.~) =
-  error "todo: (.~)"
+  -- \l b -> modify l (\_ -> b)
+  -- \l b -> modify l (const b)
+  -- \l -> modify l . const
+  -- \l -> \b -> \s -> modify l (\_ -> b) s
+  -- \l -> \b -> modify l (\_ -> b)
+  -- \l -> \b -> modify l (const b)
+  -- \l -> \b -> (modify l) (const b)
+  \l -> modify l . const
+
+-- \x -> f (g x)
+-- f . g
 
 infixl 5 .~
 
@@ -176,8 +194,8 @@ fmodify ::
   -> (a -> f b)
   -> s
   -> f t 
-fmodify =
-  error "todo: fmodify"
+fmodify (Lens r) =
+  r
 
 -- |
 --
@@ -210,8 +228,15 @@ infixl 5 |=
 fstL ::
   Lens (a, x) (b, x) a b
 fstL =
-  error "todo: fstL"
+  Lens (\k -> \(a, x) -> fmap (\b -> (b, x)) (k a))
+-- k :: a -> f b
+-- a :: a
 
+-- Functor f =>
+-- k a :: f b
+-- fmap _ (k a)
+-- x :: x
+-- ? :: f (b, x)
 -- |
 --
 -- >>> modify sndL (++ "def") (13, "abc")
@@ -225,7 +250,15 @@ fstL =
 sndL ::
   Lens (x, a) (x, b) a b
 sndL =
-  error "todo: sndL"
+  Lens (\k -> \(x, a) -> fmap (\b -> (x, b)) (k a))
+-- k :: a -> f b
+-- a :: a
+
+-- Functor f =>
+-- x :: x
+-- k a :: f b
+-- fmap _ (k a)
+-- ? :: f (x, b)
 
 -- |
 --
@@ -251,7 +284,25 @@ mapL ::
   k
   -> Lens (Map k v) (Map k v) (Maybe v) (Maybe v)
 mapL =
-  error "todo: mapL"
+  \k -> Lens (\f -> \m ->
+    let mv = Map.lookup k m
+    in  fmap (\mvv -> case mvv of
+                        Nothing -> Map.delete k m   
+                        Just v -> Map.insert k v m) (f mv))
+
+-- Functor f =>
+-- Map.insert :: k -> v -> Map k v -> Map k v
+-- Map.delete :: k -> Map k v -> Map k v
+-- Map.lookup :: k -> Map k v -> Maybe v
+-- k :: k
+-- f :: Maybe v -> f (Maybe v)
+-- m :: Map k v
+-- mv :: Maybe v
+-- f mv :: f (Maybe v)
+-- fmap _ (f mv)
+-- mvv :: Maybe v
+-- ? :: Map k v
+
 
 -- |
 --
@@ -277,7 +328,20 @@ setL ::
   k
   -> Lens (Set k) (Set k) Bool Bool
 setL =
-  error "todo: setL"
+  \k -> Lens (\f -> \s ->
+--    fmap (\b -> if b then Set.insert k set_of_k else Set.delete k set_of_k) (bool_2_f_of_bool (Set.member k set_of_k)))
+--  fmap (\b -> if b then Set.insert k s else Set.delete k s) (f (Set.member k s)))
+--  fmap (\b -> bool (Set.delete k s) (Set.insert k s) b) (f (Set.member k s)))
+    fmap (bool (Set.delete k s) (Set.insert k s)) (f (Set.member k s)))
+    
+-- k :: k
+-- b :: Bool
+-- bool_2_f_of_bool :: Bool -> f Bool
+-- set_of_k :: Set k
+-- Set.member :: k -> Set k -> Bool
+-- Set.insert :: k -> Set k -> Set k
+-- Set.delete :: k -> Set k -> Set k
+-- ? :: Set k
 
 -- |
 --
@@ -290,8 +354,8 @@ compose ::
   Lens s t a b
   -> Lens q r s t
   -> Lens q r a b
-compose =
-  error "todo: compose"
+compose (Lens p) (Lens q) =
+  Lens (q . p)
 
 -- | An alias for @compose@.
 (|.) ::
@@ -313,9 +377,10 @@ infixr 9 |.
 identity ::
   Lens a b a b
 identity =
-  error "todo: identity"
+  Lens id
 
 -- |
+-- AlongsideLeft, AlongsideRight
 --
 -- >>> get (product fstL sndL) (("abc", 3), (4, "def"))
 -- ("abc","def")
@@ -452,8 +517,7 @@ getSuburb ::
   Person
   -> String
 getSuburb =
-  error "todo: getSuburb"
-
+  get (suburbL `compose` addressL) 
 
 -- |
 --
