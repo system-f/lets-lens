@@ -1,6 +1,6 @@
 # Let's Lens
 
-<img src="http://i.imgur.com/0h9dFhl.png" width="300px"/>
+![System-F](https://system-f.gitlab.io/logo/systemf-450x450.jpg)
 
 Let's Lens presents a series of exercises, in a similar format to
 [the Data61 functional programming course material](http://github.com/data61/fp-course).
